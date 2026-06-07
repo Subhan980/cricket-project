@@ -9,54 +9,87 @@ export class News extends Component {
     this.state = {
       results: [],
       loading: false,
-      page: 0,
-      totalResults: [],
+      page: null,
+      nextPage: null,
+      previousPage: null,
+      totalResults: 0,
+      pageHistory: [],
     };
   }
 
   
   async componentDidMount() {
     
-      let url = `https://newsdata.io/api/1/news?apikey=pub_3058bcd099932c95931004aa8f87093ede70&country=in&q=cricket&page=0`;
+      let url = `https://newsdata.io/api/1/news?apikey=${process.env.REACT_APP_NEWSDATA_API_KEY}&country=in&language=en&q=cricket`;
       this.setState({ loading: true });
 
-      let data = await fetch(url);
-      let parsedData = await data.json();
+      try {
+        let data = await fetch(url);
+        let parsedData = await data.json();
 
-      this.setState({
-        results: parsedData.results,
-        totalResults: parsedData.totalResults,
-        loading: false,
-      });
+        const newPageHistory = [parsedData.results || []];
+        localStorage.setItem("cricketNewsHistory", JSON.stringify(newPageHistory));
+
+        this.setState({
+          results: parsedData.results || [],
+          totalResults: parsedData.totalResults || 0,
+          page: parsedData.page || null,
+          nextPage: parsedData.nextPage || null,
+          previousPage: parsedData.previousPage || null,
+          loading: false,
+          pageHistory: newPageHistory,
+        });
+      } catch (error) {
+        console.error("Error fetching news:", error);
+        this.setState({
+          results: [],
+          totalResults: 0,
+          loading: false,
+        });
+      }
    
     
   }
   previousclick = async () => {
-    let url = `https://newsdata.io/api/1/news?apikey=pub_3058bcd099932c95931004aa8f87093ede70&country=in&q=cricket&page=${this.state.page - 1}`;
-    this.setState({ loading: true });
-    let data = await fetch(url);
-    let parsedData = await data.json();
-
-    this.setState({
-      page: this.state.page - 1,
-      results: parsedData.results,
-      loading: false,
-    });
-  };
-  nextclick = async () => {
-    if (this.state.page + 1 > Math.ceil(this.state.totalResults / 10)) {
-    } else {
-      let url = `https://newsdata.io/api/1/news?apikey=pub_3058bcd099932c95931004aa8f87093ede70&country=in&q=cricket&page=${this.state.page + 1}`;
-      this.setState({ loading: true });
-      let data = await fetch(url);
-
-      let parsedData = await data.json();
-
+    const { pageHistory } = this.state;
+    if (pageHistory.length > 1) {
+      const newHistory = pageHistory.slice(0, -1);
+      const previousResults = newHistory[newHistory.length - 1];
+      
+      localStorage.setItem("cricketNewsHistory", JSON.stringify(newHistory));
+      
       this.setState({
-        page: this.state.page + 1,
-        results: parsedData.results,
+        results: previousResults,
+        pageHistory: newHistory,
         loading: false,
       });
+    }
+  };
+
+  nextclick = async () => {
+    const { nextPage, pageHistory } = this.state;
+    if (nextPage) {
+      let url = `https://newsdata.io/api/1/news?apikey=${process.env.REACT_APP_NEWSDATA_API_KEY}&country=in&language=en&q=cricket&page=${nextPage}`;
+      this.setState({ loading: true });
+      try {
+        let data = await fetch(url);
+        let parsedData = await data.json();
+
+        const newPageHistory = [...pageHistory, parsedData.results || []];
+        localStorage.setItem("cricketNewsHistory", JSON.stringify(newPageHistory));
+
+        this.setState({
+          results: parsedData.results || [],
+          page: parsedData.page || null,
+          nextPage: parsedData.nextPage || null,
+          previousPage: parsedData.previousPage || null,
+          loading: false,
+          pageHistory: newPageHistory,
+        });
+      } catch (error) {
+        console.error("Error fetching next news:", error);
+        this.setState({ loading: false });
+      }
     }
   };
 
@@ -69,14 +102,12 @@ export class News extends Component {
          
 
           <h1 className="text-center" id="head" style={{ marginTop: "20px" }}>
-            <b>Cricket News</b>
+            <b>Crciket News</b>
           </h1>
           {this.state.loading && <Spinner />}
           <div className="row">
             {!this.state.loading &&
-              this.state.results
-                .filter((_, index) => index % 2 === 0)
-                .map((element) => {
+              this.state.results.map((element) => {
                   return (
                     <div className="col-md-4 mb-3" key={element.link}>
                      
@@ -103,7 +134,7 @@ export class News extends Component {
           <div className="container d-flex justify-content-between">
             <button
               type="button"
-              disabled={this.state.page <= 0}
+              disabled={this.state.pageHistory.length <= 1}
               className="btn btn-dark"
               onClick={this.previousclick}
             >
@@ -112,9 +143,7 @@ export class News extends Component {
             </button>
             <button
               type="button"
-              disabled={
-                this.state.page + 2 > Math.ceil(this.state.totalResults / 10)
-              }
+              disabled={!this.state.nextPage}
               className="btn btn-dark"
               onClick={this.nextclick}
             >

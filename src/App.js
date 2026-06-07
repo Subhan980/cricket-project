@@ -6,8 +6,7 @@ import Navbar from './component/Navbar';
 import {
   BrowserRouter as Router,
   Switch,
-  Route,
-  Routes
+  Route
 } from "react-router-dom";
 import Footer from './component/Footer';
 
@@ -31,9 +30,9 @@ function App() {
           
           
             <Switch>
-            <Route exact path="/"><Card key="top" match="Matches" category="fixtures-by-date"/></Route>
-            <Route exact path="/recent"><Card  key="result" match="Recent Matches" category="results" /></Route>
-            <Route exact path="/upcoming"><Card key="fixture" match="Fixtures" category="fixtures"  /></Route>
+            <Route exact path="/"><Card key="top" match="Live Matches" category="live"/></Route>
+            <Route exact path="/recent"><Card  key="result" match="Recent Matches" category="recent" /></Route>
+            <Route exact path="/upcoming"><Card key="fixture" match="Upcoming Matches" category="upcoming"  /></Route>
             <Route exact path="/news"><News key="News"/></Route>
             </Switch>
           
