@@ -13,9 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t cricket-website .
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -23,17 +20,27 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "Connected to EC2"
+
             cd ~/Cricket
+
+            echo "Pulling latest code..."
             git pull origin main
 
+            echo "Stopping old container..."
             docker stop cricket-website || true
+
+            echo "Removing old container..."
             docker rm cricket-website || true
 
+            echo "Building Docker image..."
             docker build -t cricket-website .
 
+            echo "Starting new container..."
             docker run -d \
               --name cricket-website \
               -p 80:80 \
               cricket-website
 
+            echo "Checking container..."
             docker ps
