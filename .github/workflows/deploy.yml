@@ -20,12 +20,20 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: 13.60.210.54
-          username: ${{ secrets.EC2_USER }}
-          key: ${{W.pem }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/Cricket
             git pull origin main
+
             docker stop cricket-website || true
             docker rm cricket-website || true
+
             docker build -t cricket-website .
-            docker run -d --name cricket-website -p 80:80 cricket-website
+
+            docker run -d \
+              --name cricket-website \
+              -p 80:80 \
+              cricket-website
+
+            docker ps
